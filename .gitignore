@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+*.tsbuildinfo
+playwright-report/
+test-results/
+artifacts/
+# Prints privados fornecidos pela família; preservar somente no computador.
+public/depoimentos/
+public/images/depoimentos/

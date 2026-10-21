@@ -1,0 +1,5 @@
+# Arquivos privados da família: preservar localmente, nunca enviar ao deploy.
+public/depoimentos/
+public/images/depoimentos/
+artifacts/
+test-results/
