@@ -1,12 +1,17 @@
-import { Quote } from "lucide-react";
 import { professional } from "@/data/professional";
-import { testimonials } from "@/data/testimonials";
+import { testimonials, type Testimonial } from "@/data/testimonials";
 import { SectionLabel } from "./ui";
 import { Reveal } from "./reveal";
+import { TestimonialCard } from "./testimonial-card";
 
-export function Care() {
-  const published = testimonials.filter(
-    (item) => item.authorized && item.published && item.text.trim(),
+export function Care({
+  previewTestimonials,
+}: { previewTestimonials?: Testimonial[] } = {}) {
+  const preview =
+    process.env.NODE_ENV === "development" && previewTestimonials !== undefined;
+  const published = (preview ? previewTestimonials : testimonials).filter(
+    (item) =>
+      item.text.trim() && (preview || (item.authorized && item.published)),
   );
   return (
     <section
@@ -29,12 +34,8 @@ export function Care() {
         {published.length ? (
           <div className="testimonials">
             {published.map((item) => (
-              <Reveal key={item.id}>
-                <figure>
-                  <Quote size={26} aria-hidden="true" />
-                  <blockquote>{item.text}</blockquote>
-                  <figcaption>{item.publicLabel}</figcaption>
-                </figure>
+              <Reveal key={item.id} fade={false}>
+                <TestimonialCard testimonial={item} preview={preview} />
               </Reveal>
             ))}
           </div>

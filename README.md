@@ -50,17 +50,29 @@ O retrato disponível é JPG, não PNG. Sua resolução pequena foi respeitada. 
 
 ## Depoimentos e privacidade
 
-A página exibe **Nossa forma de cuidar** inicialmente. As quatro entradas estão vazias, com `authorized: false` e `published: false`; nenhum texto de paciente foi inventado ou transcrito.
+A página pública continua exibindo **Nossa forma de cuidar**. Os quatro textos fornecidos estão somente em `.local/testimonials.json`, ignorado pelo Git e pela Vercel. O arquivo versionado `src/data/testimonials.ts` mantém os textos vazios e os controles `authorized: false` e `published: false`.
+
+### Visualizar os quatro cards localmente
+
+```powershell
+npm.cmd run dev:preview
+```
+
+Abra **http://127.0.0.1:3101/previa/depoimentos**. O servidor fica restrito ao computador local. Se já houver outro `next dev` aberto neste projeto, encerre-o antes de iniciar este comando. Também é possível acessar `/previa/depoimentos` pelo endereço localhost do servidor de desenvolvimento existente.
+
+A prévia lê o JSON privado apenas no servidor, em desenvolvimento, sem alterar as autorizações. Os cards mostram **Prévia local · Aguardando autorização**. Apenas o terceiro relato tem cinco estrelas confirmadas; os outros não exibem estrelas. O quarto é identificado explicitamente como opinião de outra pessoa compartilhada por mensagem. Os textos não são exibidos na página inicial, mesmo durante o desenvolvimento.
+
+Em produção, a rota de prévia retorna 404 e o arquivo local não é lido. `.local/` também está excluída do rastreamento de arquivos do build Next.js, do Git e do envio pela Vercel CLI. Não importe o JSON em componentes e não utilize `git add -f` para esses arquivos. Uma cópia nova do repositório não terá os textos privados: mantenha o arquivo local guardado no seu computador. Sua estrutura é uma lista de objetos com `id`, `text`, `authorized: false` e `published: false`, um para cada identificador existente no arquivo de dados.
 
 Para ativar uma entrada em `src/data/testimonials.ts`:
 
 1. Obtenha e documente autorização específica para divulgar o texto.
-2. Preencha `text` com o relato real revisado, removendo nomes, informações clínicas, identificadores e outros dados pessoais.
-3. Mantenha `publicLabel` genérico, como `Relato autorizado`.
+2. Somente depois da liberação, copie para `text` o trecho aprovado do arquivo local, removendo nomes, informações clínicas, identificadores e outros dados pessoais. Apenas esse conteúdo aprovado poderá entrar no repositório público.
+3. Escolha um `publicLabel` genérico: `Relato de paciente`, `Avaliação de paciente` ou `Experiência compartilhada`. A observação `Relato autorizado` aparece separadamente no card.
 4. Defina **ambos** `authorized: true` e `published: true` após a revisão.
 5. Rode o build e publique novamente. Entradas sem texto continuam ocultas.
 
-Os prints originais estão em `public/depoimentos/dep1.png` a `dep4.png`, em caminhos diferentes do briefing. Foram preservados localmente, excluídos do Git e do envio pela Vercel CLI e bloqueados por `src/proxy.ts`, inclusive pelo endpoint de otimização de imagens. Não são importados nem exibidos. Não remova essas proteções nem publique a pasta `public` por um servidor estático independente. Não adicione esses arquivos ao Git com `git add -f`.
+Os prints originais foram movidos para `.local/depoimentos/dep1.png` a `dep4.png`, preservando os arquivos fora de `public`. Não há rota para servi-los. Os caminhos antigos continuam bloqueados por `src/proxy.ts`, inclusive pelo endpoint de otimização de imagens. Não são importados nem exibidos. Não mova os prints de volta para a pasta pública.
 
 ## Publicar na Vercel
 
@@ -97,12 +109,24 @@ O Playwright inicia o servidor de produção se necessário. Para ambientes sem 
 
 Os testes cobrem links e mensagem de WhatsApp, proteção dos prints, imagens, rotas de SEO, menu mobile com teclado, movimento reduzido, ausência de overflow em seis larguras entre 320 e 1440 px e verificação automatizada WCAG com axe em desktop/mobile. Capturas são salvas em `artifacts/` e não entram no deploy. A análise automatizada não substitui revisão humana de acessibilidade.
 
+Os testes de privacidade também verificam o 404 da prévia em produção e a ausência dos textos privados nos arquivos de produção e nos traces. Para testar a prévia real, mantenha o servidor de desenvolvimento aberto e, em outro PowerShell, execute:
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL = "http://127.0.0.1:3102"
+$env:TEST_PREVIEW_BASE_URL = "http://127.0.0.1:3101"
+npm.cmd run build
+npm.cmd run test:e2e
+Remove-Item Env:PLAYWRIGHT_BASE_URL, Env:TEST_PREVIEW_BASE_URL
+```
+
+O Playwright usa um servidor de produção separado na porta 3102. Os testes da prévia são ignorados quando `TEST_PREVIEW_BASE_URL` não está definida ou quando o arquivo privado não existe; os testes de bloqueio em produção continuam ativos.
+
 Para Lighthouse, use um build de produção e o painel Lighthouse do Chrome. Métricas variam por dispositivo, rede e hospedagem. As fontes são obtidas pelo `next/font` no build e servidas pelo próprio site; o primeiro build precisa de acesso à rede.
 
 ### Resultado da verificação local
 
 - Lint, TypeScript e build de produção aprovados.
-- Cinco testes de navegador aprovados, incluindo axe em desktop e mobile.
+- Oito testes aprovados, incluindo axe em desktop/mobile, prévia local e verificação de privacidade do build.
 - Lighthouse mobile local: desempenho 91, acessibilidade 100, boas práticas 82 e SEO 100; CLS 0 e bloqueio total de 50 ms.
 - A medição inicial de desempenho foi 80 devido a um script HTTP injetado pelo Kaspersky do computador. O resultado 91 foi obtido bloqueando somente as URLs desse script na sessão de auditoria. A tentativa de injeção ainda afetou boas práticas. Nenhuma configuração do antivírus foi modificada. Repita a medição na hospedagem HTTPS para avaliar o ambiente final.
 - Relatórios locais: `artifacts/lighthouse.json`, `artifacts/lighthouse-controlled.json`; capturas em `artifacts/site-375.png` e `artifacts/site-1440.png`.
